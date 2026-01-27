@@ -1,0 +1,71 @@
+CREATE DATABASE Expense_Tracker;
+
+	CREATE TABLE Users(
+		id VARCHAR(225) PRIMARY KEY NOT NULL,
+		user_name VARCHAR(225) NOT NULL,
+		email VARCHAR(225) NOT NULL,
+		phone_number VARCHAR(50) NOT NULL,
+		password varchar(225) NOT NULL,
+		income FLOAT,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+	);
+
+	CREATE TABLE Categories(
+		id VARCHAR(225) PRIMARY KEY NOT NULL,
+		user_id VARCHAR(225) NOT NULL,
+		category_name VARCHAR(225) NOT NULL,
+		description TEXT NOT NULL,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ,
+		FOREIGN KEY (user_id) REFERENCES Users(id)
+	);
+
+	CREATE TABLE Expenses(
+		id VARCHAR(225) PRIMARY KEY NOT NULL,
+		user_id VARCHAR(100) NOT NULL,
+		category_name VARCHAR(100) NOT NULL,
+		expense_name VARCHAR(225) NOT NULL,
+		amount FLOAT NOT NULL,
+		date DATE NOT NULL,
+		description TEXT,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ,
+		FOREIGN KEY (user_id) REFERENCES Users(id),
+		FOREIGN KEY (category_name) REFERENCES Categories(category_name)
+	);
+
+	
+	CREATE TABLE Budget(
+		id VARCHAR(225) PRIMARY KEY NOT NULL,
+		user_id VARCHAR(100) NOT NULL,
+		category_name VARCHAR(100) NOT NULL,
+		amount FLOAT NOT NULL,
+		start_date DATE NOT NULL,
+		end_date DATE NOT NULL,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ,
+		FOREIGN KEY (user_id) REFERENCES Users(id)
+	);
+
+	 CREATE TABLE  reset_password(
+	 	id 	VARCHAR(100) PRIMARY KEY NOT NULL,
+	 	user_id VARCHAR(100) NOT NULL,
+	 	email VARCHAR(100) NOT NULL,
+	 	pass_token INT NOT NULL,
+	 	expires TIMESTAMP NOT NULL,
+	 	FOREIGN KEY(user_id) REFERENCES Users(id)
+	 	);
+
+	CREATE TABLE Reminder(
+		id VARCHAR(225) PRIMARY KEY NOT NULL,
+		user_id VARCHAR(100) NOT NULL,
+		expense_id VARCHAR(100) NOT NULL,
+		reminder_date DATE NOT NULL,
+		reminder_time TIMESTAMP  DEFAULT CURRENT_TIMESTAMP NOT NULL,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ,
+		FOREIGN KEY (user_id) REFERENCES Users(id),
+		FOREIGN KEY (expense_id) REFERENCES Expenses(id)
+	);
+

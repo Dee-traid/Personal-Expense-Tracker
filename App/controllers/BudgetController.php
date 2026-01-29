@@ -1,17 +1,28 @@
 <?php
 
+namespace App\Controllers;
+
+use App\Models\Budget;
+use App\Models\User;
+use App\Models\Category;
+use App\View\CLIHelper;
+use App\Core\DatabaseHelper;
+use PDO;
+use PDOException;
+use DateTimeImmutable;
+
+class BudgetController{
+
 	public static function addBudget( string $userId){
 		$pdo = DatabaseHelper::getPDOInstance();
 		$id = uniqid();
 		$timeStamp = (new DateTimeImmutable('now'))->format("Y-m-d H:i:s");
-
-		$input = self::budgetInput($userId);
+		$input = BudgetInput::budgetInput($userId);
 		if (!$input) return null;
 		extract($input);
-
 		$query = " INSERT INTO Budget (id, user_id, category_name, amount, start_date, end_date, created_at, updated_at) VALUES (:id, :userId, :categoryName, :amount, :startDate, :endDate, :createdAt, :updatedAt)";
-
-        if (!Category::findOneByCategoryName($categoryName)) {
+        
+		if (!Category::findOneByCategoryName($categoryName)) {
             throw new Exception("Category not found");
         }
 
@@ -28,7 +39,7 @@
 			$stmt->execute();
 
 			CLIHelper::success(" Added successful");
-			return self::findOneByID($id);
+			return Budget::findOneByID($id);
 
 		}catch(PDOException $e){
 			CLIHelper::error(" Unknown Error(" . $e->getMessage());
@@ -47,7 +58,7 @@
 
 			$budgets = [];
 			while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-				$budgets[] = self::mapToBudgetRow($row);
+				$budgets[] = Budget::mapToBudgetRow($row);
 			}
 			return $budgets;
 	
@@ -58,11 +69,10 @@
 
 	public static function updateBudgetDetails(string $id) {
 		$pdo = DatabaseHelper::getPDOInstance();
-		$input = self::updateBudgetInput($id);
+		$input = BudgetInput::updateBudgetInput($id);
 		if(!$input) return null;
 		extract($input);	
 		$timeStamp = (new DateTimeImmutable('now'))->format("Y-m-d H:i:s");
-
 		$query = "UPDATE Budget SET category_name = :categoryName, amount = :amount, start_date = :startDate, end_date = :endDate, updated_at = :updatedAt WHERE id = :id";
 
 		try{
@@ -76,11 +86,11 @@
 			$stmt->execute();
 
 			if($stmt->rowCount() > 0){
-            CLIHelper::success(" Update successful");
-            return self::findOneByID($id);  
+				CLIHelper::success(" Update successful");
+				return Budget::findOneByID($id);  
 			} else {
-            CLIHelper::error(" No rows updated - budget may not have changed");
-            return null;
+				CLIHelper::error(" No rows updated - budget may not have changed");
+				return null;
 			}
 		}catch(PDOException $e){
 			CLIHelper::error(" Unknown Error" . $e->getMessage());
@@ -90,7 +100,7 @@
 
 	public static function deleteBudgetByID(string $id){
 		$pdo = DatabaseHelper::getPDOInstance();
-		$budget = self::findOneByID($id);
+		$budget = Budget::findOneByID($id);
 		if(!$budget) {
 			CLIHelper::error(" Budget with ID '$id' not found.");
 			return null;
@@ -139,7 +149,6 @@
 
 	public static function budgetCheck(string $userId, string $categoryName): bool{
 		$pdo = DatabaseHelper::getPDOInstance();
-
 		$query = "SELECT amount FROM Budget WHERE user_id  = :userId AND  category_name = :categoryName LIMIT 1";
 
 		$stmt = $pdo->prepare($query);
@@ -160,11 +169,13 @@
 
 		$totalSpent = (float)($expense['total_spent'] ?? 0 );
 		$budgetAmount = (float)$budget['amount'];
+		
 		if($totalSpent > $budgetAmount){
 			CLIHelper::error(" You have exceeded your budget for $categoryName" . (" Amout spent: $totalSpent, , Budget: $budgetAmount"));
 		}
 		return false;
-
 	}
+
+}
 
 ?>

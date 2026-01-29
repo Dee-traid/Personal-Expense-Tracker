@@ -1,6 +1,13 @@
 <?php
+namespace App\Models;
+
+use App\Core\DatabaseHelper;
+use DateTimeImmutable;
+use PDO;
+use PDOException;
 
 class User{
+	public static ?string $loggedInUserID = null;
 	private string $id;
 	private string $userName;
 	private string $email;
@@ -10,7 +17,7 @@ class User{
 	private DateTimeImmutable $createdAt;
 	private DateTimeImmutable $updatedAt;
 
-	private static ?string $userLoggedInID = null;
+	
 	
 	public function __construct(
 		string $id,
@@ -42,7 +49,7 @@ class User{
 	public function getCreatedAt(){ return $this->createdAt;}
 	public function getUpdatedAt(){ return $this->updatedAt;}
 	
-	public static function mapToUsersRow(array $row){
+	public static function mapToUserRow(array $row){
 		$id = $row['id'] ?? "";
 		$userName = $row['user_name'] ?? "";
 		$email = $row['email'] ?? "";
@@ -55,36 +62,32 @@ class User{
 		return new User($id, $userName, $email, $phoneNo, $password, $income, $createdAt, $updatedAt);
 	}
 
-		public static function findOneByID(string $id){
+	public static function findOneByID(string $id){
 		$pdo = DatabaseHelper::getPDOInstance();
 		$query = " SELECT * FROM Users WHERE id = :id";
 		$user = null;
-
 		$stmt = $pdo->prepare($query);
 		$stmt->bindparam(':id', $id);
 		$stmt->execute();
 		$row = $stmt->fetch(PDO::FETCH_ASSOC);
-
 		if(!$row){
 			return $user;
 		}
-		return self::mapToUsersRow($row);
+		return User::mapToUserRow($row);
 	}
 
 	public static function findOneByUserName(string $userName){
 		$pdo = DatabaseHelper::getPDOInstance();
 		$query = " SELECT * FROM Users WHERE user_name = :userName";
 		$user = null;
-
 		$stmt = $pdo->prepare($query);
 		$stmt->bindparam(':userName', $userName);
 		$stmt->execute();
 		$row = $stmt->fetch(PDO::FETCH_ASSOC);
-
 		if(!$row){
 			return $user;
 		}
-		return self::mapToUsersRow($row);
+		return User::mapToUserRow($row);
 	}
 
 }

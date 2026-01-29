@@ -1,5 +1,59 @@
 <?php
+namespace App\Views;
+
+use App\Models\Expense;
+use App\Models\User;
+
 class UIDisplay{
+
+	public static function userDisplayTable(array $user) {
+		$width = 40;
+		$line = "+" . str_repeat("-", $width) . "+\n";
+		
+		echo "\n" . $line;
+		echo "| " . str_pad("USER PROFILE", $width - 2, " ", STR_PAD_BOTH) . " |\n";
+		echo $line;
+		
+		foreach ($user as $key => $value) {
+			if ($key === 'password' || $key === 'id') continue;
+
+			if ($key === 'income') {
+				$value = "$" . number_format((float)$value, 2);
+			}
+
+			$label = str_replace('_', ' ', strtoupper($key));
+			
+			$row = sprintf("| %-15s : %-20s |", $label, substr((string)$value, 0, 20));
+			echo $row . "\n";
+		}
+		
+		echo $line . "\n";
+	}
+
+	public static function displayCategoryTable(array $categories) {
+		if (empty($categories)) {
+			echo "\nNo categories found.\n";
+			return;
+		}
+		
+		$mask = "| %-3s | %-18.18s | %-30.30s |\n";
+		$divider = "+-----+--------------------+--------------------------------+\n";
+
+		echo "\n" . $divider;
+		printf($mask, "S/N", "CATEGORY NAME", "DESCRIPTION");
+		echo $divider;
+
+		foreach ($categories as $index => $category) {
+			printf($mask, 
+				($index + 1), 
+				$category->getCategoryName(), 
+				$category->getDescription()
+			);
+		}
+
+		echo $divider . "\n";
+	}
+
 	Public static function filterExpenseDisplay(){
 		echo "=== FILTER EXPENSES ===\n";
 		$period = UIDisplay::selectPeriod();

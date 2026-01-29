@@ -34,9 +34,9 @@ set_exception_handler(function($exception) {
 });
 
 
-try {
-    \App\Core\Database::getPDOInstance();
-} catch (\Exception $e) {
-    echo "\033[31mFailed to connect to database. Please check your configuration.\033[0m\n";
-    exit(1);
-}
+// try {
+//     \App\Core\Database;
+// } catch (\Exception $e) {
+//     CLIHelper::error("Failed to connect to database. Please check your configuration.");
+//     exit(1);
+// }

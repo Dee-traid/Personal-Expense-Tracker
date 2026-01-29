@@ -1,21 +1,24 @@
 <?php
-    namespace App\core;
+    namespace App\Core;
 
+    use App\Models\User;
     use App\Controllers\AuthController;
     use App\Controllers\ExpenseController;
     use App\Controllers\CategoryController;
     use App\Controllers\BudgetController;
+    use App\Core\DatabaseHelper;
     use App\Views\CLIHelper;
+    use App\Core\UtilityFunction;
+    use App\Views\UIDisplay;
 
     class Router{
-        private static ?string $loggedInUserID = null;
-        private static bool $isRunning;
+        public static bool $isRunning = true;
 
-        public static function Start(){
+         public static function Start(){
             $run = self::$isRunning;
-            $userId = self::$loggedInUserID;
             self::showWelcome();
             while($run){
+                $userId = User::$loggedInUserID;
                 if($userId === null){
                     self::mainMenu();
                 }else{
@@ -46,26 +49,31 @@
         }
 
         public static function mainMenu(){
-            echo "  \n┌─────────────────────────────────────┐\n";
-            echo "  │                   MENU              │\n";
-            echo "  └─────────────────────────────────────┘\n";
-            echo "     [1] Login\n";
-            echo "     [2] Register\n";
-            echo "     [3] Reset Password\n";
-            echo "     [4] Exit\n";
-            echo "  ─────────────────────────────────────\n";
+            echo "=======================================\n";
+            echo "                   MENU               \n";
+            echo "=======================================\n";
+            echo "    [1] User Login\n";
+            echo "    [2] User Registration\n";
+            echo "    [3] Reset Password\n";
+            echo "    [4] Exit\n";
+            echo "─────────────────────────────────────\n";
 
             $choice = CLIHelper::getInput("Enter your choice");
-
             switch ($choice) {
                 case '1':
-                    self::
+                    $user = AuthController::userLogin();
+                    if($user){
+                        CLIHelper::success(" ====== Welcome, " . $user->getUserName() . "! =========");
+                    }
                     break;
                 case '2':
-                    self::
+                   $user = AuthController::userRegistration();
+                   if($user){
+                        CLIHelper::success(" ====== Welcome, " . $user->getUserName() . "! =========");
+                   }
                     break;
                 case '3':
-                    self::
+                    AuthController::resetPassword();
                     break;
                 case '4':
                     $isRunning = false;
@@ -78,74 +86,83 @@
         }
         
         public static function authUserMenu(){
-            echo "\n╔════════════════════════════════════════════════════╗\n";
-            echo "║                   MAIN MENU                        ║\n";
-            echo "╚════════════════════════════════════════════════════╝\n";
+            $userId = User::$loggedInUserID;
+            UtilityFunction::clearScreen();
+            echo "======================================================\n";
+            echo "                      MAIN MENU                          \n";
+            echo "======================================================\n";
             echo "\n";
-            echo "  [1] Expenses Menu\n";
+            echo "  [1] User Profile\n";
             echo "  [2] Categories Menu\n";
             echo "  [3] Budget Menu\n";
             echo "  [4] Reports & Analytics\n";
-            echo "  [5] User Profile\n";
+            echo "  [5] Expenses Menu\n";
             echo "  [6] Logout\n";
             echo "  [7] Exit Application\n";
-            echo "─────────────────────────────────────────────────────\n";
+            echo "  [0] Go Back\n";
+            echo "───────────────────────────────────────────────────── \n";
 
             $choice = CLIHelper::getInput("Enter your choice");
 
             switch ($choice) {
                 case '1':
-                    self::showExpenseMenu();
+                    self::userMenu($userId);
                     break;
                 case '2':
-                    self::showCategoryMenu();
+                    self::categoryMenu($userId);
                     break;
                 case '3':
-                    self::showBudgetMenu();
+                     self::budgetMenu($userId);
                     break;
                 case '4':
-                    self::showReportsMenu();
+                    self::Reports($userId);
                     break;
                 case '5':
-                    self::showProfileMenu();
+                    self::expenseMenu($userId);
                     break;
                 case '6':
-                    self::handleLogout();
+                    User::$loggedInUserID = null;
+                    CLIHelper::success("Logged out successfully!");
                     break;
                 case '7':
                     self::$isRunning = false;
                     self::loggedOut();
+                    break;
+                case '0':
+                    self::authUserMenu();
                     break;
                 default:
                     CLIHelper::error("Invalid choice. Please try again.");
             }
         }
 
-        public static function userMenu(){
-            echo "\n┌─────────────────────────────────────┐\n";
-            echo "│         USER PROFILE                │\n";
-            echo "└─────────────────────────────────────┘\n";
-            echo "  1. View Profile\n";
-            echo "  2. Update Profile\n";
-            echo "  3. Delete Account\n";
-            echo "  4. Back to Main Menu\n";
-            echo "─────────────────────────────────────\n";
+        public static function userMenu($userId){
+            UtilityFunction::clearScreen();
+            echo "======================================================\n";
+            echo "                      USER PROFILE                       \n";
+            echo "======================================================\n";
+            echo "  [1] View Profile\n";
+            echo "  [2] Update Profile\n";
+            echo "  [3] Delete Account\n";
+            echo "  [4] Back to Main Menu\n";
+            echo "─────────────────────────────────────────────────────\n";
 
             $choice = CLIHelper::getInput("Enter your choice");
 
             switch ($choice) {
                 case '1':
-                    # code...
+                   AuthController::viewUserProfile($userId);
+                   UtilityFunction::pauseForUser();
                     break;
                 case '2':
-                    # code...
+                   AuthController::updateUserDetails($userId);
+                   UtilityFunction::pauseForUser();
                     break;
                 case '3':
-                    # code...
+                    AuthController::deleteUserById($userId);
                     break;
                 case '4':
-                    # code...
-                    break;
+                    return;
                 default:
                     CLIHelper::error(" Invalid Option.");
                     self::loggedOut();
@@ -154,19 +171,20 @@
 
         }
 
-        public static function expenseMenu(){
-             echo " \n┌─────────────────────────────────────┐\n";
-            echo "  │               EXPENSE MENU           │\n";
-            echo "  └─────────────────────────────────────┘\n";
-            echo "  1. Add New Expense\n";
-            echo "  2. View All Expenses\n";
-            echo "  3. Update Expense\n";
-            echo "  4. Delete Expense\n";
-            echo "  5. Search Expenses\n";
-            echo "  6. Filter Expenses by Period\n";
-            echo "  7. Delete All Expenses\n";
-            echo "  8. Back to Main Menu\n";
-            echo "─────────────────────────────────────\n";
+        public static function expenseMenu($userId){
+            UtilityFunction::clearScreen();
+            echo "======================================================\n";
+            echo "                      EXPENSE MENU                       \n";
+            echo "======================================================\n";
+            echo "  [1] Add New Expense\n";
+            echo "  [2] View All Expenses\n";
+            echo "  [3] Update Expense\n";
+            echo "  [4] Delete Expense\n";
+            echo "  [5] Search Expenses\n";
+            echo "  [6] Filter Expenses by Period\n";
+            echo "  [7] Delete All Expenses\n";
+            echo "  [0] Back to Main Menu\n";
+            echo "─────────────────────────────────────────────────────\n";
 
             $choice = CLIHelper::getInput("Enter your choice");
 
@@ -192,7 +210,7 @@
                 case '7':
                     # code...
                     break;
-                case '8':
+                case '0':
                     # code...
                     break;  
                 default:
@@ -202,146 +220,134 @@
             }
         }
 
-        public static function categoryMenu(){
-            echo "\n┌─────────────────────────────────────┐\n";
-            echo "│      CATEGORY MANAGEMENT            │\n";
-            echo "└─────────────────────────────────────┘\n";
-            echo "  1. Add New Category\n";
-            echo "  2. View All Categories\n";
-            echo "  3. Update Category\n";
-            echo "  4. Delete Category\n";
-            echo "  5. Delete All Categories\n";
-            echo "  6. Back to Main Menu\n";
-            echo "─────────────────────────────────────\n";
+        public static function categoryMenu($userId){
+            UtilityFunction::clearScreen();
+            echo "======================================================\n";
+            echo "                      CATEGORY MENU                       \n";
+            echo "======================================================\n";
+            echo "  [1] Add New Category\n";
+            echo "  [2] View All Categories\n";
+            echo "  [3] Update Category\n";
+            echo "  [4] Delete Category\n";
+            echo "  [5] Delete All Categories\n";
+            echo "  [0] Back to Main Menu\n";
+            echo "───────────────────────────────────────────────────── \n";
 
             $choice = CLIHelper::getInput("Enter your choice");
 
             switch ($choice) {
                 case '1':
-                    # code...
+                     CategoryController::addCategory($userId);
+                     UtilityFunction::pauseForUser();
                     break;
                 case '2':
-                    # code...
+                    CategoryController::viewAllCategories($userId, $sortByDescending = true);
+                    UtilityFunction::pauseForUser();
                     break;
                 case '3':
-                    # code...
+                    CategoryController::updateCategoryDetails($userId);
+                    UtilityFunction::pauseForUser();
                     break;
                 case '4':
-                    # code...
+                    CategoryController::deleteCategoryByID($userId);
+                    UtilityFunction::pauseForUser();
                     break;
                 case '5':
-                    # code...
+                    CategoryController::deleteAllCategory($userId);
                     break;
-                case '6':
-                    # code...
-                    break;
+                case '0':
+                    return;
                 default:
-                    # code...
+                    CLIHelper::error(" Invalid option,");
+                    UtilityFunction::pauseForUser();
+                    return;
                     break;
             }
         }
 
-    public static function budgetMenu(){
-        echo "\n┌─────────────────────────────────────┐\n";
-        echo "│       BUDGET MANAGEMENT             │\n";
-        echo "└─────────────────────────────────────┘\n";
-        echo "  1. Add New Budget\n";
-        echo "  2. View All Budgets\n";
-        echo "  3. Update Budget\n";
-        echo "  4. Delete Budget\n";
-        echo "  5. Check Budget Status\n";
-        echo "  6. Delete All Budgets\n";
-        echo "  7. Back to Main Menu\n";
-        echo "─────────────────────────────────────\n";
+    public static function budgetMenu($userId){
+        UtilityFunction::clearScreen();
+        echo "======================================================\n";
+        echo "                      BUDGET MENU                       \n";
+        echo "======================================================\n";
+        echo "  [1] Add New Budget\n";
+        echo "  [2] View All Budgets\n";
+        echo "  [3] Update Budget\n";
+        echo "  [4] Delete Budget\n";
+        echo "  [5] Check Budget Status\n";
+        echo "  [6] Delete All Budgets\n";
+        echo "  [0] Back to Main Menu\n";
+        echo "───────────────────────────────────────────────────── \n";
 
         $choice = CLIHelper::getInput("Enter your choice");
 
         switch ($choice) {
             case '1':
-                $controller->addBudget(self::$currentUserId);
+                
                 break;
             case '2':
-                $controller->viewAllBudgets(self::$currentUserId);
+                
                 break;
             case '3':
-                $controller->updateBudget();
+
                 break;
             case '4':
-                $controller->deleteBudget();
+
                 break;
             case '5':
-                $controller->checkBudget(self::$currentUserId);
+                
                 break;
             case '6':
-                $controller->deleteAllBudgets();
+
                 break;
-            case '7':
+            case '0':
                 return;
             default:
                 CLIHelper::error("Invalid choice. Please try again.");
         }
 
-        self::pauseForUser();
+        UtilityFunction::pauseForUser();
      }
 
 
-      private static function showReportsMenu(): void {
-        echo "\n┌─────────────────────────────────────┐\n";
-        echo "│      REPORTS & ANALYTICS            │\n";
-        echo "└─────────────────────────────────────┘\n";
-        echo "  1. Expense Statistics\n";
-        echo "  2. Expenditure Report\n";
-        echo "  3. Expense Report by Category\n";
-        echo "  4. Period Calculations\n";
-        echo "  5. Back to Main Menu\n";
-        echo "─────────────────────────────────────\n";
+      private static function Reports($userId) {
+        UtilityFunction::clearScreen();
+        echo "======================================================\n";
+        echo "                   REPORT & ANALYTICS                     \n";
+        echo "======================================================\n";
+        echo "  [1] Expense Statistics\n";
+        echo "  [2] Expenditure Report\n";
+        echo "  [3] Expense Report by Category\n";
+        echo "  [4] Period Calculations\n";
+        echo "  [0] Back to Main Menu\n";
+        echo "─────────────────────────────────────────────────────\n ";
 
         $choice = CLIHelper::getInput("Enter your choice");
 
-        $controller = new ExpenseController();
-
         switch ($choice) {
             case '1':
-                $controller->showExpenseStats(self::$currentUserId);
+                
                 break;
             case '2':
-                $controller->showExpenditureReport(self::$currentUserId);
+                
                 break;
             case '3':
-                $controller->showExpenseReportByCategory(self::$currentUserId);
+                
                 break;
             case '4':
-                $controller->showExpenseCalculations(self::$currentUserId);
+
                 break;
-            case '5':
+            case '0':
                 return;
             default:
                 CLIHelper::error("Invalid choice. Please try again.");
         }
 
-        self::pauseForUser();
+        UtilityFunction::pauseForUser();
+        
     }
 
+}
 
-    // Utility methods
-
-     private static function pauseForUser(): void {
-        echo "\n";
-        readline("Press Enter to continue...");
-    }
-
-    public static function getCurrentUserId(): ?string {
-        return self::$currentUserId;
-    }
-
-    public static function setCurrentUserId(?string $userId): void {
-        self::$currentUserId = $userId;
-    }
-
-
-
-     }
-
-    
 
 ?>

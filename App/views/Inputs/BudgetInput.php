@@ -1,12 +1,19 @@
-<?php
+<?
+namespace App\Views\Inputs;
 
+use App\Models\Budget;
+use App\Models\User;
+use App\View\CLIHelper;
+use Exception;
 
-    public static function budgetInput(string $userId){
-			$user = User::findOneByID($userId);
-			if (!$user) {
-            throw new Exception(" User not found");
-            return null;
+class BudgetInput{
+	public static function budgetInput(string $userId){
+		$user = Budget::findOneByID($userId);
+		if (!$user) {
+		throw new Exception(" User not found");
+		return null;
         }
+		
         $categoryName = CLIHelper::validateInput(" Category Name", 2, true);
         $amount = CLIHelper::getAmount(" Amount ", true);
         $startDate = CLIHelper::getDateInput(" Start Date");
@@ -22,7 +29,7 @@
 	}
 
 	public static function updateBudgetInput($id){
-		$budget = self::findOneByID($id);
+		$budget = Budget::findOneByID($id);
 		if(!$budget){
 			CLIHelper::error(" Budget not found");
 			return null;
@@ -43,6 +50,7 @@
 		];
 
 	}
+}
 
 
 ?>

@@ -1,4 +1,7 @@
 <?php 
+namespace App\Views;
+use DateTimeImmutable;
+
 class CLIHelper{
 	public static function getInput(string $prompt) {
 		echo $prompt . ": ";
@@ -96,7 +99,7 @@ class CLIHelper{
 			$input = self::getInput( "$prompt (YYYY-MM-DD) [Default: $default] ");
 			if(empty($input)) return (new DateTimeImmutable ($default))->format('Y-m-d');
 
-			$d = DateTime::createFromFormat('Y-m-d', $input);
+			$d = DateTimeImmutable::createFromFormat('Y-m-d', $input);
 			if($d && $d->format('Y-m-d') === $input){
 				return $input;
 			}

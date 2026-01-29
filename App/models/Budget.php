@@ -1,4 +1,10 @@
 <?php
+namespace App\Models;
+
+use App\Core\DatabaseHelper;
+use DateTimeImmutable;
+use PDO;
+use PDOException;
 
 class Budget{
 	private string $id;
@@ -70,7 +76,7 @@ class Budget{
 		if(!$row){
 			return $budget;
 		}
-		return self::mapToBudgetRow($row);
+		return Budget::mapToBudgetRow($row);
 	}
 
 	public static function findOneByUserID(string $userId){
@@ -84,7 +90,7 @@ class Budget{
 		if(!$row){
 			return $budget;
 		}
-		return self::mapToBudgetRow($row);
+		return Budget::mapToBudgetRow($row);
 	}
 }
 

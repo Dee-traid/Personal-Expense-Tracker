@@ -1,6 +1,18 @@
 <?php
+namespace App\Controllers;
 
-public static function userRegistration(){
+use App\Models\User;
+use App\Views\Inputs\AuthInput;
+use App\Views\CLIHelper;
+use App\Core\UtilityFunction;
+use App\Core\DatabaseHelper;
+use App\Views\UIDisplay;
+use PDO;
+use PDOException;
+use DateTimeImmutable;
+
+class AuthController{
+	public static function userRegistration(){
 		$pdo = DatabaseHelper::getPDOInstance();	
 		try{
 			$identifier = CLIHelper::validateInput(" Enter your email/ password");
@@ -8,16 +20,15 @@ public static function userRegistration(){
 			$stmt->bindparam(':email', $identifier);
 			$stmt->bindparam(':phoneNo', $identifier);
 			$stmt->execute();
-
 			$row = $stmt->fetch(PDO::FETCH_ASSOC);			
 			if(!empty($row)){
 				CLIHelper::error (" User exists. Please Login");
-				return self::userLogin();
+				return AuthController::userLogin();
 			}
 
 			$id = uniqid();
 			$timeStamp = (new DateTimeImmutable('now'))->format('Y-m-d H:i:s');
-			$input = self::getUserInput();
+			$input = AuthInput::getUserInput();
 			if(!$input) return null;
 			extract($input);
 
@@ -37,7 +48,7 @@ public static function userRegistration(){
 
 			CLIHelper::success(" Registration successful");
 
-			return self::findOneByID($id);
+			return User::findOneByID($id);
 
 		}catch(PDOException $e){
 			CLIHelper::error(" Registration Failed" . $e->getMessage());
@@ -48,13 +59,10 @@ public static function userRegistration(){
 
 	public static function userLogin(){
 		$pdo = DatabaseHelper::getPDOInstance();
-
-		$input= self::loginInput();
+		$input= AuthInput::loginInput();
 		if(!$input) return null;
 		extract($input);
-
 		$query = "SELECT * FROM Users WHERE email = :email OR phone_number = :phoneNo";
-
 		try{
 			$stmt = $pdo->prepare($query);
 			$stmt->bindparam(':email', $identifier);
@@ -62,12 +70,12 @@ public static function userRegistration(){
 			$stmt->execute();
 			$user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-			$confirm = AppManager::confirm($prompt = "Login? (y/n): ");
+			$confirm = UtilityFunction::confirm($prompt = "Login? (y/n): ");
 			if($confirm){
 				if($user && password_verify($password, $user['password'])){
-					self::$userLoggedInID = $user['id'];
+					User::$loggedInUserID = $user['id'];
 					CLIHelper::success(" Login successful");
-						return self::mapToUsersRow($user);
+						return User::mapToUserRow($user);
 				}else{
 					CLIHelper::error(" Login Failed, Invalid Credentials");
 					return null;
@@ -103,7 +111,7 @@ public static function userRegistration(){
 		while(true){
 			if ((time() - $startTime) > 60) {
 				CLIHelper::error(" Time expired, Generate a new one ");
-				return self::resetPassword();
+				return User::resetPassword();
 			}
 
 			$userInput = CliHelper::getInput(" Enter the 6-digit recovery code");
@@ -134,7 +142,6 @@ public static function userRegistration(){
 			$updateStmt->bindparam(':updatedAt', $timeStamp);
 			$updateStmt->execute();
 
-
 			CliHelper::success("Password Updated successfully");
 			return true;
 		}catch(PDOException $e){
@@ -144,38 +151,40 @@ public static function userRegistration(){
 		
 	}
 
-    public static function ViewAllUsers(string $id, bool $sortByDescending = true){
+    public static function viewUserProfile(string $userId, bool $sortByDescending = true){
 		$pdo = DatabaseHelper::getPDOInstance();
 		$sort = $sortByDescending ? "desc" : "asc";
-		$query = " SELECT * FROM  Users ORDER BY created_at  $sort";
+		$query = " SELECT * FROM  Users WHERE id =:userId LIMIT 1";
 
 		try {
 			$stmt = $pdo->prepare($query);
+			$stmt->bindParam(':userId', $userId);
 			$stmt->execute();
 
-			$users = [];
-			while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-				$users[] = self::mapToUsersRow($row);
+			$user = $stmt->fetch(PDO::FETCH_ASSOC);
+			if(!$user){
+				CLIHelper::error(" User not found ");
+				return null;
 			}
 
-			return $users;
+			UIDisplay::userDisplayTable($user);
+			return User::mapToUserRow($user);
 		} catch (PDOException $e) {
 			 CLIHelper::error(" Unknown Error" . $e->getMessage());
 		}
 	}
 
-	public static function updateUserDetails(string $id) {
+	public static function updateUserDetails(string $userId) {
 		$pdo = DatabaseHelper::getPDOInstance();
-		$input = self::updateUserInput($id);
+		$input = AuthInput::updateUserInput($userId);
 		if(!$input) return null;
 		extract($input);
 		$timeStamp = (new DateTimeImmutable('now'))->format("Y-m-d H:i:s");
-
-		$query = " UPDATE Users SET user_name = :userName , email = :email,  phone_number = :phoneNo, income = :income,  updated_at = :updatedAt WHERE  id = :id";
+		$query = " UPDATE Users SET user_name = :userName , email = :email,  phone_number = :phoneNo, income = :income,  updated_at = :updatedAt WHERE  id = :userId";
 
 		try{
 			$stmt = $pdo->prepare($query);
-			$stmt->bindparam(':id', $id);
+			$stmt->bindparam(':userId', $userId);
 			$stmt->bindparam(':userName', $userName);
 			$stmt->bindparam(':email', $email);
 			$stmt->bindparam(':phoneNo', $phoneNo);
@@ -186,9 +195,11 @@ public static function userRegistration(){
 			CLIHelper::success(" Updated sucessfully");
 
 			if($stmt->rowCount() > 0){
-				$user = self::findOneByID($id);
+				$user = User::findOneByID($userId);
 				return $user;
 			}
+
+			return null;
 
 		}catch(PDOException $e){
 			 CLIHelper::error(" Unknown Error" . $e->getMessage());
@@ -196,25 +207,29 @@ public static function userRegistration(){
 
 	}
 
-	public static function deleteUserByID( string $id){
+	public static function deleteUserByID(string $userId){
 		$pdo = DatabaseHelper::getPDOInstance();
-		$user = self::findOneByID($id);
+		$user = User::findOneByID($userId);
 		if(!$user) {
 			CLIHelper::error(" User not found");
 			return null;
 		}
 
-		$query = "DELETE FROM  Users WHERE id = :id";
+		$query = "DELETE FROM  Users WHERE id = :userId";
+		$confirm = UtilityFunction::confirm("Do you want to delete? (y/n): ");
 		try{
-			$stmt = $pdo->prepare($query);
-			$stmt->bindparam(':id', $id);
-			$stmt->execute();
-			
-			if($stmt->rowCount()  > 0){
-				CLIHelper::success("User '{$user->getUserName()}' deleted successfully.");
-				return $user;
+			if($confirm){
+				$stmt = $pdo->prepare($query);
+				$stmt->bindparam(':userId', $userId);
+				$stmt->execute();
+				
+				if($stmt->rowCount()  > 0){
+					CLIHelper::success("User '{$user->getUserName()}' deleted successfully.");
+					return $user;
+				}
+				return null;
 			}
-			return null;
+			
 		}catch(PDOException $e){
 			CLIHelper::error("Delete failed: " . $e->getMessage());
        		 return null;
@@ -223,11 +238,11 @@ public static function userRegistration(){
 
 	public static function DeleteAllUser(){
 		$pdo = DatabaseHelper::getPDOInstance();
-		$confirm = AppManager::confirm("Do you want to delete? (y/n): ");
-		$confirm1= AppManager::confirm("Confirm Deletion? (y/n): ");
+		$confirm = UtilityFunction::confirm("Do you want to delete? (y/n): ");
+		$confirm1= UtilityFunction::confirm("Confirm Deletion? (y/n): ");
 		try{
 			if($confirm && $confirm1 == true){
-				$query = " DELETE FROM Users "; 
+				$query = " DELETE FROM users "; 
 				$stmt = $pdo->prepare($query);
 				$stmt->execute();
 
@@ -243,5 +258,5 @@ public static function userRegistration(){
 		}
 	}
 	
-
+}
 ?>

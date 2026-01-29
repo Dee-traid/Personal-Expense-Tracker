@@ -1,13 +1,21 @@
 <?php
+namespace App\Controllers;
+
+use App\Models\Expense;
+use App\Views\Input\ExpenseInput;
+use App\Views\CLIHelper;
+use App\Views\UIDisplay;
+use App\Core\DatabaseHelper;
+use PDOException;
+use DateTimeImmutable;
+
 
 class ExpenseController{
     public static function addExpense(string $userId){
 		$pdo = DatabaseHelper::getPDOInstance();
-		$input = self::getExpenseInput($userId);
-		extract($input);
-
+		$input = ExpenseInput::getExpenseInput($userId);
 		if(!$input) return null;
-
+		extract($input);
 		$id = uniqid();
 		$timeStamp = (new DateTimeImmutable('Now'))->format("Y-m-d H:i:s");
       
@@ -27,7 +35,7 @@ class ExpenseController{
 			$stmt->execute();
 
 			CLIHelper:: success(" Added successfully");
-			return self::findOneByID($id);
+			return Category::findOneByID($id);
 
 		}catch(PDOException $e){
 			CLIHelper:: error(" Uknown Error" . $e->getMessage());
@@ -45,7 +53,7 @@ class ExpenseController{
 
 			$expenses = [];
 			while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-				$expenses[] = self::mapToExpenseRow($row);
+				$expenses[] = Category::mapToExpenseRow($row);
 			}
 			return $expenses;
 		} catch (PDOException $e) {
@@ -55,11 +63,10 @@ class ExpenseController{
 
 	public static function updateExpense(string $id) {
 		$pdo = DatabaseHelper::getPDOInstance();
-		$input = self::updateExpenseInput($id);
-		if (!$input)  return ;
+		$input = CategoryInput::updateExpenseInput($id);
+		if (!$input)  return null;
 		extract($input);
 		$timeStamp = (new DateTimeImmutable('now'))->format("Y-m-d H:i:s");
-
 		$query = " UPDATE Expenses SET category_name = :categoryName, expense_name = :expenseName, amount = :amount,  description = :description, updated_at = :updatedAt WHERE  id = :id";
 
 		try{
@@ -75,12 +82,12 @@ class ExpenseController{
 			CLIHelper::success(" Updated successfully");
 
 			if($stmt->rowCount() > 0){
-				$expense = self::findOneByID($id);
+				$expense = Category::findOneByID($id);
 				return $expense;
 			}
 
 		}catch(PDOException $e){
-			CLIHelper:: error(" Unknown Error" . $e->getMessage());
+			CLIHelper::error(" Unknown Error" . $e->getMessage());
 			return null;
 		}
 
@@ -88,7 +95,7 @@ class ExpenseController{
 
 	public static function deleteExpenseByID(string $id){
 		$pdo = DatabaseHelper::getPDOInstance();
-		$expense = self::findOneByID($id);
+		$expense = Category::findOneByID($id);
 		if(!$expense) {
 			CLIHelper::error(" Expense with ID '$id' not found.");
 			return null;
@@ -125,7 +132,7 @@ class ExpenseController{
 					CLIHelper::success(" Deleted sucessfully");
 				}
 			}else{
-				CLIHelper:: error(" Deletion Cancelled");
+				CLIHelper::error(" Deletion Cancelled");
 			}
 
 		}catch(PDOException $e){
@@ -137,7 +144,6 @@ class ExpenseController{
 
 	public static function getExpenditureReport(string $userId, string $period) {
 		$pdo = DatabaseHelper::getPDOInstance();
-
 		switch ($period) {
 			case 'day':
 				$select = "created_at::date as label";
@@ -208,7 +214,6 @@ class ExpenseController{
 
 	public static function filterExpenses(string $userId, string $period){
 		$pdo = DatabaseHelper::getPDOInstance();
-
 		$query = "SELECT * FROM Expenses WHERE user_id = :userId"; 
 		switch (strtolower($period)) {
 			case 'day':
@@ -232,7 +237,7 @@ class ExpenseController{
 		$stmt->execute();
 		$expenses = [];
 		while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-			$expenses[] = self::mapToExpenseRow($row);
+			$expenses[] = Expense::mapToExpenseRow($row);
 		}
 		return $expenses;
 	}
@@ -276,7 +281,7 @@ class ExpenseController{
 			
 			$expenses = [];
 			while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-				$expenses[] = self::mapToExpenseRow($row);
+				$expenses[] = Expense::mapToExpenseRow($row);
 			}
 			return $expenses;
 		} catch (PDOException $e) {
@@ -314,7 +319,7 @@ class ExpenseController{
 			
 			$expenses = [];
 			while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-				$expenses[] = self::mapToExpenseRow($row);
+				$expenses[] = Expense::mapToExpenseRow($row);
 			}
 			
 			$groupedExpenses = [];

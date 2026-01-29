@@ -1,4 +1,9 @@
 <?php
+namespace App\Views\Inputs;
+
+use App\Views\CLIHelper;
+use App\Models\Expense;
+
 class UIDisplayInput{
     public static function selectPeriod() {
 		echo "\nSelect Period:\n";

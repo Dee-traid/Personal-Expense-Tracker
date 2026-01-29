@@ -1,18 +1,16 @@
 <?php
-
 	namespace App\Core;
 
 	use PDO;
 	use PDOException;
+	use App\Views\CLIHelper;
 	
 class DatabaseHelper{
 	private static $pdo = null;
-
 	public static function getPDOInstance(){
 		if (self::$pdo != null) {
 			return self::$pdo;
 		}
-
 		$host = 'localhost';
 		$port = '5432';
 		$user = 'postgres';

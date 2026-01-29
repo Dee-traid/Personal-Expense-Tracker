@@ -1,4 +1,10 @@
 <?php
+namespace App\Models;
+
+use App\Core\DatabaseHelper;
+use DateTimeImmutable;
+use PDO;
+use PDOException;
 
 class Category{
 	private string $id;
@@ -43,7 +49,7 @@ class Category{
 
 	public static function findOneByID(string $id){
 		$pdo = DatabaseHelper::getPDOInstance();
-		$query = "SELECT * FROM Categories WHERE id = :id";
+		$query = "SELECT * FROM Categories WHERE id = :id LIMIT 1";
 		$stmt = $pdo->prepare($query);
 		$stmt->bindparam(':id', $id);
 		$stmt->execute();
@@ -54,7 +60,7 @@ class Category{
 			return $category;
 		}
 
-		return self::mapToCategoryRow($row);
+		return Category::mapToCategoryRow($row);
 	}
 
 	public static function findOneByCategoryName(string $categoryName){
@@ -69,7 +75,7 @@ class Category{
 		if(!$row){
 			return $Category;
 		}
-		return self::mapToCategoryRow($row);
+		return Category::mapToCategoryRow($row);
 	}
 
 }

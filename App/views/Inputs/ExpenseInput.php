@@ -1,5 +1,12 @@
 <?php
-class ExpenseInputView{
+namespace App\Views\Inputs;
+
+use App\Models\User;
+use App\Models\Expense;
+use App\View\CLIHelper;
+use Exception;
+
+class ExpenseInput{
     	public static function getExpenseInput(string $userId){
 		$user = User::findOneByID($userId);
 		if (!$user) {

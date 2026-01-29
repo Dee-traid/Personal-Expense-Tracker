@@ -1,9 +1,17 @@
 <?php
-public static function getCategoryInput(string $userId){
-		if (!User::findOneByID($userId)) {
-            throw new Exception(" User not found");
+namespace App\Views\Inputs;
+
+use App\Models\Category;
+use App\Models\User;
+use App\Views\CLIHelper;
+use Exception;
+
+class CategoryInput{
+	public static function getCategoryInput(string $categoryId){
+		if (!User::findOneByID($categoryId)) {
+            CLIHelper::error(" Category not found");
             return null;
-          }
+        }
 
 		$categoryName = CLIHelper::validateInput(" Enter Category Name");
 		$description = CLIHelper::validateInput(" Enter Category Description", 2, true);
@@ -13,8 +21,8 @@ public static function getCategoryInput(string $userId){
 		];
 	}
 
-    public static function categoryUpdateInput(string $id){
-		$category = self::findOneByID($id);
+    public static function categoryUpdateInput(string $categoryId){
+		$category = Category::findOneByID($categoryId);
 	    if (!$category) {
 	        CLIHelper::error("User not found");
 	        return null;
@@ -29,6 +37,6 @@ public static function getCategoryInput(string $userId){
 			'description' => !empty($newDescription) ? $newDescription : $category->getDescription()
 		];
 	}
-
+}
 
 ?>

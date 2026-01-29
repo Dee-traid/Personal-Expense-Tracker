@@ -1,5 +1,10 @@
 <?php
+namespace App\Models;
 
+use App\Core\DatabaseHelper;
+use DateTimeImmutable;
+use PDO;
+use PDOException;
 
 class Expense{
 	private string $id;
@@ -73,7 +78,7 @@ class Expense{
 		if(!$row){
 			return $Expense;
 		}
-		return self::mapToExpenseRow($row);
+		return Expense::mapToExpenseRow($row);
 	}
 
 }

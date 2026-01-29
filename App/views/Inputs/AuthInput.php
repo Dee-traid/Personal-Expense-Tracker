@@ -1,6 +1,13 @@
 <?php
-class InputView{
-    	public static function getUserInput(){
+namespace App\Views\Inputs;
+
+use App\Models\User;
+use App\Views\CLIHelper;
+use Exception;
+
+
+class AuthInput{
+    public static function getUserInput(){
 		$userName = CLIHelper::validateInput(" Enter your Username");
 		$email = CLIHelper::validateEmail(" Enter your email");
 		$income = CLIHelper::getAmount(" Enter your Income");
@@ -28,7 +35,7 @@ class InputView{
 	}
 
     public static function updateUserInput(string $id){
-		$user = self::findOneByID($id);
+		$user = User::findOneByID($id);
 	    if (!$user) {
 	        CLIHelper::error("User not found");
 	        return null;

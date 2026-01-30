@@ -153,8 +153,9 @@ class CategoryController{
 		$confirm1= UtilityFunction::confirm(" Dangerous operation!!!!,  Confirm Deletion? (y/n): ");
 		try{
 			if($confirm && $confirm1 == true){
-				$query = " DELETE FROM Categories"; 
+				$query = " DELETE FROM Categories WHERE user_id = :userId"; 
 				$stmt = $pdo->prepare($query);
+				$stmt->bindParam(':userId', $userId);
 				$stmt->execute();
 
 				if($stmt->rowCount() > 0){

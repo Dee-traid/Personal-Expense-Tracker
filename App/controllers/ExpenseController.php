@@ -2,10 +2,12 @@
 namespace App\Controllers;
 
 use App\Models\Expense;
-use App\Views\Input\ExpenseInput;
+use App\Views\Inputs\ExpenseInput;
+use App\Views\Inputs\UIDisplayInput;
 use App\Views\CLIHelper;
 use App\Views\UIDisplay;
 use App\Core\DatabaseHelper;
+use PDO;
 use PDOException;
 use DateTimeImmutable;
 
@@ -120,8 +122,8 @@ class ExpenseController{
 
 	public static function DeleteAllExpenses(){
 		$pdo = DatabaseHelper::getPDOInstance();
-		$confirm = AppManager::confirm("Do you want to delete? (y/n): ");
-		$confirm1= AppManager::confirm("Confirm Deletion? (y/n): ");
+		$confirm = UtilityFunction::confirm("Do you want to delete? (y/n): ");
+		$confirm1= UtilityFunction::confirm("Confirm Deletion? (y/n): ");
 		try{
 			if($confirm && $confirm1 == true){
 				$query = " DELETE FROM Expenses "; 
@@ -142,8 +144,9 @@ class ExpenseController{
 
 	}
 
-	public static function getExpenditureReport(string $userId, string $period) {
+	public static function getExpenditureReport(string $userId){
 		$pdo = DatabaseHelper::getPDOInstance();
+		$period = UIDisplayInput::selectPeriod();
 		switch ($period) {
 			case 'day':
 				$select = "created_at::date as label";
@@ -173,8 +176,9 @@ class ExpenseController{
 		return $stmt->fetchAll(PDO::FETCH_ASSOC);
 	}
 
-	public static function getExpenseStats(string $userId, string $period){
+	public static function getExpenseStats(string $userId){
 		$pdo = DatabaseHelper::getPDOInstance();
+		$period = UIDisplayInput::selectPeriod();
 		$query = " SELECT 
 						AVG(amount) as average_expense, 
 						MAX(amount) as highest_expense, 
@@ -212,8 +216,9 @@ class ExpenseController{
 		
 	}
 
-	public static function filterExpenses(string $userId, string $period){
+	public static function filterExpenses(string $userId){
 		$pdo = DatabaseHelper::getPDOInstance();
+		$period = UIDisplayInput::selectPeriod();
 		$query = "SELECT * FROM Expenses WHERE user_id = :userId"; 
 		switch (strtolower($period)) {
 			case 'day':
@@ -244,6 +249,7 @@ class ExpenseController{
 
 	public static function searchExpensesByCategoryAndDate(string $userId, ?string $categoryName = null, ?string $startDate = null, ?string $endDate = null) {
 		$pdo = DatabaseHelper::getPDOInstance();
+		UIDisplayInput::searchInput();
 		$query = "SELECT * FROM Expenses WHERE user_id = :userId";
 		
 		if ($categoryName !== null && $categoryName !== '') {
@@ -290,9 +296,9 @@ class ExpenseController{
 		}
 	}
 
-	public static function getExpenseReportByCategoryDateAmount(string $userId, string $period) {
+	public static function getExpenseReportByCategoryDateAmount(string $userId){
 		$pdo = DatabaseHelper::getPDOInstance();
-		
+		$period = UIDisplayInput::selectPeriod();
 		$query = "SELECT category_name, date, expense_name, amount, description FROM Expenses WHERE user_id = :userId";
 		
 		switch (strtolower($period)) {
@@ -339,7 +345,7 @@ class ExpenseController{
 		}
 	}
 
-	public static function calculateExpensesByPeriod(string $userId) {
+	public static function calculateExpensesByPeriod(string $userId){
 		$pdo = DatabaseHelper::getPDOInstance();
 		try {
 			$queryDay = "SELECT  COUNT(*) as count, COALESCE(SUM(amount), 0) as total, COALESCE(AVG(amount), 0) as average FROM Expenses WHERE user_id = :userId AND DATE(created_at) = CURRENT_DATE";	

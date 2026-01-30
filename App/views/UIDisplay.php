@@ -54,6 +54,32 @@ class UIDisplay{
 		echo $divider . "\n";
 	}
 
+	public static function displayBudgetTable(array $budgets) {
+    if (empty($budgets)) {
+        echo "\nNo budgets found.\n";
+        return;
+    }
+
+    $mask = "| %-3s | %-15.15s | %-12s | %-10s | %-10s |\n";
+    $divider = "+-----+-----------------+--------------+------------+------------+\n";
+
+    echo "\n" . $divider;
+    printf($mask, "S/N", "CATEGORY", "AMOUNT", "START", "END");
+    echo $divider;
+
+    foreach ($budgets as $index => $budget) {
+        printf($mask, 
+            ($index + 1), 
+            $budget->getCategoryName(), 
+            number_format($budget->getAmount(), 2),
+            $budget->getStartDate()->format('Y-m-d'), 
+            $budget->getEndDate()->format('Y-m-d')
+        );
+    }
+
+    echo $divider . "\n";
+}
+
 	Public static function filterExpenseDisplay(){
 		echo "=== FILTER EXPENSES ===\n";
 		$period = UIDisplay::selectPeriod();

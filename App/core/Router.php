@@ -95,8 +95,8 @@
             echo "  [1] User Profile\n";
             echo "  [2] Categories Menu\n";
             echo "  [3] Budget Menu\n";
-            echo "  [4] Reports & Analytics\n";
-            echo "  [5] Expenses Menu\n";
+            echo "  [4] Expenses Menu\n";
+            echo "  [5] Reports & Analytics\n";
             echo "  [6] Logout\n";
             echo "  [7] Exit Application\n";
             echo "  [0] Go Back\n";
@@ -115,10 +115,10 @@
                      self::budgetMenu($userId);
                     break;
                 case '4':
-                    self::Reports($userId);
+                    self::expenseMenu($userId);
                     break;
                 case '5':
-                    self::expenseMenu($userId);
+                    self::Reports($userId);
                     break;
                 case '6':
                     User::$loggedInUserID = null;
@@ -129,10 +129,11 @@
                     self::loggedOut();
                     break;
                 case '0':
-                    self::authUserMenu();
-                    break;
+                    return;
                 default:
                     CLIHelper::error("Invalid choice. Please try again.");
+                    UtilityFunction::pauseForUser();
+                    return;
             }
         }
 
@@ -165,8 +166,8 @@
                     return;
                 default:
                     CLIHelper::error(" Invalid Option.");
-                    self::loggedOut();
-                    break;
+                    UtilityFunction::pauseForUser();
+                    return;
             }
 
         }
@@ -190,33 +191,40 @@
 
             switch ($choice){
                 case '1':
-                    # code...
+                   ExpenseController::addExpense($userId);
+                   UtilityFunction::pauseForUser();
                     break;
                 case '2':
-                    # code...
+                    ExpenseController::viewAllExpenses($userId, $sortByDescending = true);
+                    UtilityFunction::pauseForUser();
                     break;
                 case '3':
-                    # code...
+                   ExpenseController::updateExpenseDetails($userId);
+                   UtilityFunction::pauseForUser();
                     break;
                 case '4':
-                    # code...
+                    ExpenseController::deleteExpenseByID($userId);
+                    UtilityFunction::pauseForUser();
                     break;
                 case '5':
-                    # code...
+                   ExpenseController::searchExpensesByCategoryAndDate($userId, $categoryName = null, $startDate = null, $endDate = null);
+                   UtilityFunction::pauseForUser();
                     break;
                 case '6':
-                    # code...
+                    ExpenseController:: filterExpenses($userId);
+                    UtilityFunction::pauseForUser();
                     break;
                 case '7':
-                    # code...
+                    ExpenseController::DeleteAllExpenses();
+                    UtilityFunction::pauseForUser();
                     break;
                 case '0':
-                    # code...
-                    break;  
+                    return; 
                 default:
                     CLIHelper::error(" Invalid option. ");
-                    self::loggedOut();
-                    break;
+                    UtilityFunction::pauseForUser();
+                   return;
+                   
             }
         }
 
@@ -261,7 +269,6 @@
                     CLIHelper::error(" Invalid option,");
                     UtilityFunction::pauseForUser();
                     return;
-                    break;
             }
         }
 
@@ -283,30 +290,37 @@
 
         switch ($choice) {
             case '1':
-                
+                BudgetController::addBudget($userId);
+                UtilityFunction::pauseForUser();
                 break;
             case '2':
-                
+                BudgetController::viewAllBudgets($userId, $sortByDescending = true);
+                UtilityFunction::pauseForUser();
                 break;
             case '3':
-
+                BudgetController::updateBudgetDetails($userId);
+                UtilityFunction::pauseForUser();
                 break;
             case '4':
-
+                BudgetController::deleteBudgetByID($userId);
+                UtilityFunction::pauseForUser();
                 break;
             case '5':
-                
+                BudgetController::budgetCheck($userId, );
+                UtilityFunction::pauseForUser();
                 break;
             case '6':
-
+                BudgetController::deleteAllBudgets($userId);
+                UtilityFunction::pauseForUser();
                 break;
             case '0':
                 return;
             default:
                 CLIHelper::error("Invalid choice. Please try again.");
+                UtilityFunction::pauseForUser();
+                return;
         }
 
-        UtilityFunction::pauseForUser();
      }
 
 
@@ -317,7 +331,7 @@
         echo "======================================================\n";
         echo "  [1] Expense Statistics\n";
         echo "  [2] Expenditure Report\n";
-        echo "  [3] Expense Report by Category\n";
+         echo " [3] Expense Report by Category\n";
         echo "  [4] Period Calculations\n";
         echo "  [0] Back to Main Menu\n";
         echo "─────────────────────────────────────────────────────\n ";
@@ -326,24 +340,28 @@
 
         switch ($choice) {
             case '1':
-                
+                ExpenseController::getExpenseStats($userId);
+                UtilityFunction::pauseForUser();
                 break;
             case '2':
-                
+                ExpenseController::getExpenditureReport($userId);
+                UtilityFunction::pauseForUser();
                 break;
             case '3':
-                
+                ExpenseController::getExpenseReportByCategoryDateAmount($userId);
+                UtilityFunction::pauseForUser();
                 break;
             case '4':
-
+                ExpenseController::calculateExpensesByPeriod($userId);
+                UtilityFunction::pauseForUser();
                 break;
             case '0':
                 return;
             default:
                 CLIHelper::error("Invalid choice. Please try again.");
+                UtilityFunction::pauseForUser();
+                return;
         }
-
-        UtilityFunction::pauseForUser();
         
     }
 

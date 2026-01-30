@@ -39,13 +39,15 @@ CREATE DATABASE Expense_Tracker;
 	CREATE TABLE Budget(
 		id VARCHAR(225) PRIMARY KEY NOT NULL,
 		user_id VARCHAR(100) NOT NULL,
+		category_id VARCHAR(100) NOT NULL,
 		category_name VARCHAR(100) NOT NULL,
 		amount FLOAT NOT NULL,
 		start_date DATE NOT NULL,
 		end_date DATE NOT NULL,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ,
-		FOREIGN KEY (user_id) REFERENCES Users(id)
+		FOREIGN KEY (user_id) REFERENCES Users(id),
+		FOREIGN KEY (category_id) REFERENCES Categories(id)
 	);
 
 	 CREATE TABLE  reset_password(

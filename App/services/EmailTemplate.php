@@ -26,7 +26,7 @@ class EmailTemplates {
         <body>
             <div class='container'>
                 <div class='header'>
-                    <h1>💰 Expense Summary</h1>
+                    <h1> Expense Summary</h1>
                 </div>
                 <div class='content'>
                     <h2>Hello, $userName!</h2>
@@ -52,7 +52,7 @@ class EmailTemplates {
                 </div>
                 <div class='footer'>
                     <p>This is an automated email from Expense Tracker</p>
-                    <p>© " . date('Y') . " Expense Tracker. All rights reserved.</p>
+                    <p>© " . date('Y') . " Dee's Expense Tracker. All rights reserved.</p>
                 </div>
             </div>
         </body>
@@ -100,7 +100,7 @@ class EmailTemplates {
                 </div>
                 <div class='footer'>
                     <p>This is an automated email from Expense Tracker</p>
-                    <p>© " . date('Y') . " Expense Tracker</p>
+                    <p>© " . date('Y') . " Dee's Expense Tracker</p>
                 </div>
             </div>
         </body>

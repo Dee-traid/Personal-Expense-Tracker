@@ -1,5 +1,0 @@
-- Complete sset up of mvc,
-- email setup for budget 
-- what is the ideaology of appending a data type after when creating a method?
-- Debug the regsitration for user METHODS
-- check the  update method to update the user details(it is showing successful but on next view user it does not show changes)

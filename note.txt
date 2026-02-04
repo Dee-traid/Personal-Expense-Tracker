@@ -11,7 +11,6 @@
 			- Display report on expense by  category,date and amount
 			- Check for average expense and highest and lowest expense for a certain period of time [Done]
 			- Add expense category[Done]
-			- Add split account
 
 
 			==== Database Entities ====
@@ -61,9 +60,6 @@
 					reminder time Timestamp
 					created at Timestamp
 					updated at
-
-
-if checking for the expense and budget if it is below or above i will need the category, budget for the category and expense for that category then check if the expense is greater or less than the budget if it,  alert the user using bool,
 
 
 				====== Tasks ======

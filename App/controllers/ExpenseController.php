@@ -2,11 +2,16 @@
 namespace App\Controllers;
 
 use App\Models\Expense;
+use App\Models\User;
+use App\Models\Category;
+use App\Controllers\CategoryController;
+use App\Services\EmailService;
 use App\Views\Inputs\ExpenseInput;
 use App\Views\Inputs\UIDisplayInput;
 use App\Views\CLIHelper;
 use App\Views\UIDisplay;
 use App\Core\DatabaseHelper;
+use App\Core\UtilityFunction;
 use PDO;
 use PDOException;
 use DateTimeImmutable;
@@ -15,11 +20,30 @@ use DateTimeImmutable;
 class ExpenseController{
     public static function addExpense(string $userId){
 		$pdo = DatabaseHelper::getPDOInstance();
+		$categories = CategoryController::viewAllCategories($userId);
+		if (empty($categories)) {	
+			CLIHelper::error("Create a category before adding an expense.");
+			return null;
+		}
+		$choice = (int)CLIHelper::getInput("Select Category by S/N");
+		$index = $choice - 1;
+
+		if (!isset($categories[$index])) {
+			CLIHelper::error("Invalid category selection.");
+			return null;
+		}
+
+		$selectedCategory = $categories[$index];
+		$categoryId = $selectedCategory->getId();
+		$categoryName = $selectedCategory->getCategoryName();
+
+		echo "Selected Category: $categoryName" . PHP_EOL;
+
+		$id = uniqid();
+		$timeStamp = (new DateTimeImmutable('Now'))->format("Y-m-d H:i:s");
 		$input = ExpenseInput::getExpenseInput($userId);
 		if(!$input) return null;
 		extract($input);
-		$id = uniqid();
-		$timeStamp = (new DateTimeImmutable('Now'))->format("Y-m-d H:i:s");
       
 		try{
 			$query = " INSERT INTO Expenses (id, user_id, category_name, expense_name, amount, date, description, created_at, updated_at) VALUES (:id, :userId, :categoryName, :expenseName, :amount, :date, :description, :createdAt, :updatedAt)";
@@ -37,7 +61,7 @@ class ExpenseController{
 			$stmt->execute();
 
 			CLIHelper:: success(" Added successfully");
-			return Category::findOneByID($id);
+			return Expense::findOneByID($id);
 
 		}catch(PDOException $e){
 			CLIHelper:: error(" Uknown Error" . $e->getMessage());
@@ -55,17 +79,53 @@ class ExpenseController{
 
 			$expenses = [];
 			while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-				$expenses[] = Category::mapToExpenseRow($row);
+				$expenses[] = Expense::mapToExpenseRow($row);
+			}
+			if (empty($expenses)) {
+				CLIHelper::error("No expenses found.");
+			} else {
+				UIDisplay::displayExpenseTable($expenses);
 			}
 			return $expenses;
-		} catch (PDOException $e) {
+		} catch (PDOException $e){
 			CLIHelper::error(" Unknown Error: " . $e->getMessage());
 		}
 	}
 
-	public static function updateExpense(string $id) {
+	public static function updateExpenseDetails(string $userId) {
 		$pdo = DatabaseHelper::getPDOInstance();
-		$input = CategoryInput::updateExpenseInput($id);
+		$expenses = self::viewAllExpenses($userId);
+   		if (empty($expenses)) return null;
+
+		$Choice = (int)CLIHelper::getInput("Select Expense S/N to update");
+    	$Index = $Choice - 1;
+
+		if (!isset($expenses[$Index])) {
+        CLIHelper::error("Invalid expense selection.");
+        return null;
+		}
+
+		$selectedExpense = $expenses[$Index];
+		$id = $selectedExpense->getID();
+
+		$categories = CategoryController::viewAllCategories($userId); 
+		echo "Current Category: " . $selectedExpense->getCategoryName() . PHP_EOL;
+		$cChoice = CLIHelper::getInput("Select New Category S/N (Leave empty to keep current)");
+
+		if (!empty($cChoice)) {
+			$cIndex = (int)$cChoice - 1;
+			if (isset($categories[$cIndex])) {
+				$categoryId = $categories[$cIndex]->getID();
+				$categoryName = $categories[$cIndex]->getCategoryName();
+			} else {
+				CLIHelper::error("Invalid category. Keeping current.");
+				$categoryName = $selectedExpense->getCategoryName();
+			}
+		} else {
+			$categoryName = $selectedExpense->getCategoryName();
+		}
+
+		$input = ExpenseInput::updateExpenseInput($id);
 		if (!$input)  return null;
 		extract($input);
 		$timeStamp = (new DateTimeImmutable('now'))->format("Y-m-d H:i:s");
@@ -84,7 +144,7 @@ class ExpenseController{
 			CLIHelper::success(" Updated successfully");
 
 			if($stmt->rowCount() > 0){
-				$expense = Category::findOneByID($id);
+				$expense = Expense::findOneByID($id);
 				return $expense;
 			}
 
@@ -95,39 +155,55 @@ class ExpenseController{
 
 	}
 
-	public static function deleteExpenseByID(string $id){
+	public static function deleteExpenseByID(string $userId){
 		$pdo = DatabaseHelper::getPDOInstance();
-		$expense = Category::findOneByID($id);
-		if(!$expense) {
-			CLIHelper::error(" Expense with ID '$id' not found.");
+		$expenses = self::viewAllExpenses($userId);
+		if(!$expenses) {
+			CLIHelper::error(" Budget not found.");
 			return null;
 		}
 
-		$query = "DELETE FROM  Expenses  WHERE id = :id";
-		try{
-			$stmt = $pdo->prepare($query);
-			$stmt->bindparam(':id', $id);
-			$stmt->execute();
-			
-			if($stmt->rowCount()  > 0){
-				CLIHelper::success(" Delete successful");
-				return $expense;
-			}
+		$choice = (int)CLIHelper::getInput("Enter the S/N of the budget to delete");
+		$index = $choice - 1;
+
+		if (!isset($expenses[$index])) {
+			CLIHelper::error("Invalid budget selection.");
 			return null;
+		}
+
+		$expense = $expenses[$index];
+		$id = $expense->getID();
+
+		$query = "DELETE FROM Expenses WHERE id = :id AND user_id = :userId";
+		$confirm = UtilityFunction::confirm("Do you want to delete? (y/n): ");
+		try{
+			if($confirm){
+				$stmt = $pdo->prepare($query);
+				$stmt->bindparam(':id', $id);
+				$stmt->bindparam(':userId', $userId);
+				$stmt->execute();
+				
+				if($stmt->rowCount()  > 0){
+					CLIHelper::success(" Delete successful");
+					return $expense;
+				}
+				return null;
+			}
 		}catch(PDOException $e){
 			CLIHelper::error("Delete failed: " . $e->getMessage());
        		 return null;
 		}
 	}
 
-	public static function DeleteAllExpenses(){
+	public static function deleteAllExpenses(string $userId){
 		$pdo = DatabaseHelper::getPDOInstance();
-		$confirm = UtilityFunction::confirm("Do you want to delete? (y/n): ");
-		$confirm1= UtilityFunction::confirm("Confirm Deletion? (y/n): ");
+		$confirm = UtilityFunction::confirm(" Do you want to delete? (y/n): ");
+		$confirm1= UtilityFunction::confirm(" Dangerous Operation!!, Confirm Deletion? (y/n): ");
 		try{
-			if($confirm && $confirm1 == true){
-				$query = " DELETE FROM Expenses "; 
+			if($confirm && $confirm1 === true){
+				$query = " DELETE FROM Expenses WHERE user_id = :userId"; 
 				$stmt = $pdo->prepare($query);
+				$stmt->bindparam(':userId', $userId);
 				$stmt->execute();
 
 				if($stmt->rowCount() > 0){
@@ -137,8 +213,7 @@ class ExpenseController{
 				CLIHelper::error(" Deletion Cancelled");
 			}
 
-		}catch(PDOException $e){
-			
+		}catch(PDOException $e){	
 			CLIHelper:: error(" Unknown Error(" . $e->getMessage());
 		}
 
@@ -165,15 +240,22 @@ class ExpenseController{
 			$groupBy = "TO_CHAR(created_at, 'YYYY-MM')";
 			break;
 			default:
-				throw new Exception("Invalid period selected.");
+				CLIHelper::error("Invalid period selected.");
+				return null;
 		}
 
 		$query = "SELECT $select, SUM(amount) as total FROM Expenses WHERE user_id = :userId GROUP BY $groupBy ORDER BY label DESC";
-
-		$stmt = $pdo->prepare($query);
-		$stmt->bindParam(':userId', $userId);
-		$stmt->execute();
-		return $stmt->fetchAll(PDO::FETCH_ASSOC);
+		try{
+			$stmt = $pdo->prepare($query);
+			$stmt->bindParam(':userId', $userId);
+			$stmt->execute();
+			$report = $stmt->fetchAll(PDO::FETCH_ASSOC);
+			UIDisplay::expenditureReportDisplay($report, $period);
+			return $report;
+		}catch(PDOException $e){
+			CLIHelper::error("Stats Error: " . $e->getMessage());
+			return null;
+		}
 	}
 
 	public static function getExpenseStats(string $userId){
@@ -190,7 +272,7 @@ class ExpenseController{
 
 		switch (strtolower($period)) {
 			case 'date':
-				$query .= " AND Date (created_at) = 'CURRENT_DATE' ";
+				$query .= " AND Date (created_at) = CURRENT_DATE";
 				break;
 			case 'month':
 				$query .= " AND EXTRACT(YEAR FROM created_at) = EXTRACT(YEAR FROM CURRENT_DATE) AND EXTRACT(MONTH FROM created_at) = EXTRACT(MONTH FROM CURRENT_DATE)";
@@ -206,9 +288,11 @@ class ExpenseController{
 			$stmt = $pdo->prepare($query);
 			$stmt->bindparam(':userId', $userId);
 			$stmt->execute();
+			$stats = $stmt->fetch(PDO::FETCH_ASSOC);
 
-			$expenses = $stmt->fetch(PDO::FETCH_ASSOC);
-			return $expenses;
+			UIDisplay::expenseStatsDisplay($stats, $period);
+
+			return $stats;
 		}catch(PDOException $e){
 			CLIHelper::error("Stats Error: " . $e->getMessage());
 			return null;
@@ -219,6 +303,7 @@ class ExpenseController{
 	public static function filterExpenses(string $userId){
 		$pdo = DatabaseHelper::getPDOInstance();
 		$period = UIDisplayInput::selectPeriod();
+
 		$query = "SELECT * FROM Expenses WHERE user_id = :userId"; 
 		switch (strtolower($period)) {
 			case 'day':
@@ -236,22 +321,35 @@ class ExpenseController{
 				CLIHelper::error(" Invalid Input (Day,Month,Year)");
 				break;
 		}
+		try{
+			$stmt = $pdo->prepare($query);
+			$stmt->bindparam(':userId', $userId);
+			$stmt->execute();
+			
+			$expenses = [];
+			while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+				$expenses[] = Expense::mapToExpenseRow($row);
+			}
 
-		$stmt = $pdo->prepare($query);
-		$stmt->bindparam(':userId', $userId);
-		$stmt->execute();
-		$expenses = [];
-		while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-			$expenses[] = Expense::mapToExpenseRow($row);
+			UIDisplay::filterExpenseDisplay($expenses, $period);
+			return $expenses;
+
+			}catch(PDOException $e){
+				CLIHelper::error("Filter Error: " . $e->getMessage());
+				return null;
 		}
-		return $expenses;
+		
 	}
 
-	public static function searchExpensesByCategoryAndDate(string $userId, ?string $categoryName = null, ?string $startDate = null, ?string $endDate = null) {
+	public static function searchExpensesByCategoryAndDate(string $userId) {
 		$pdo = DatabaseHelper::getPDOInstance();
-		UIDisplayInput::searchInput();
-		$query = "SELECT * FROM Expenses WHERE user_id = :userId";
 		
+		$searchInput = UIDisplayInput::searchInput();
+		$categoryName = $searchInput['categoryName'] ?? null;
+		$startDate = $searchInput['startDate'] ?? null;
+		$endDate = $searchInput['endDate'] ?? null;
+
+		$query = "SELECT * FROM Expenses WHERE user_id = :userId";
 		if ($categoryName !== null && $categoryName !== '') {
 			$query .= " AND LOWER(category_name) LIKE LOWER(:categoryName)";
 		}
@@ -282,14 +380,16 @@ class ExpenseController{
 			if ($endDate !== null && $endDate !== '') {
 				$stmt->bindParam(':endDate', $endDate);
 			}
-			
 			$stmt->execute();
 			
 			$expenses = [];
 			while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 				$expenses[] = Expense::mapToExpenseRow($row);
 			}
+
+			UIDisplay::searchExpensesDisplay($expenses, $searchInput);
 			return $expenses;
+			
 		} catch (PDOException $e) {
 			CLIHelper::error("Search Error: " . $e->getMessage());
 			return [];
@@ -299,8 +399,8 @@ class ExpenseController{
 	public static function getExpenseReportByCategoryDateAmount(string $userId){
 		$pdo = DatabaseHelper::getPDOInstance();
 		$period = UIDisplayInput::selectPeriod();
-		$query = "SELECT category_name, date, expense_name, amount, description FROM Expenses WHERE user_id = :userId";
 		
+		$query = "SELECT category_name, date, expense_name, amount, description FROM Expenses WHERE user_id = :userId";	
 		switch (strtolower($period)) {
 			case 'day':
 				$query .= " AND DATE(created_at) = CURRENT_DATE";
@@ -336,7 +436,8 @@ class ExpenseController{
 				}
 				$groupedExpenses[$category][] = $expense;
 			}
-			
+
+			UIDisplay::expenseReportDisplay($groupedExpenses, $period);
 			return $groupedExpenses;
 			
 		} catch (PDOException $e) {
@@ -371,16 +472,51 @@ class ExpenseController{
 			$stmtYear->execute();
 			$yearlyData = $stmtYear->fetch(PDO::FETCH_ASSOC);
 			
-			return [
+			$results = [
 				'daily' => $dailyData,
 				'monthly' => $monthlyData,
 				'yearly' => $yearlyData
 			];
+
+			UIDisplay::expenseCalculationDisplay($results);
+			return $results;
 			
 		} catch (PDOException $e) {
 			CLIHelper::error("Calculation Error: " . $e->getMessage());
 			return null;
 		}
+	}
+
+	
+	public static function emailMonthlySummary(string $userId) {
+		$groupedExpenses = self::getExpenseReportByCategoryDateAmount($userId);
+		if (empty($groupedExpenses)) {
+			CLIHelper::error("No expenses report found.");
+			return false;
+		}
+		$categoriesForEmail = [];
+		$grandTotal = 0;
+		$count = 0;
+
+		foreach ($groupedExpenses as $catName => $list) {
+			$catTotal = 0;
+			foreach ($list as $exp) {
+				$catTotal += $exp->getAmount();
+				$count++;
+			}
+			$categoriesForEmail[] = ['name' => $catName, 'total' => $catTotal];
+			$grandTotal += $catTotal;
+		}
+
+		$emailData = [
+			'period'     => date('F Y'),
+			'total'      => $grandTotal,
+			'count'      => $count,
+			'categories' => $categoriesForEmail
+		];
+
+		$user = User::findOneByID($userId);
+		return EmailService::sendMonthlyReport($user->getEmail(), $user->getUserName(), $emailData);
 	}
 
 }

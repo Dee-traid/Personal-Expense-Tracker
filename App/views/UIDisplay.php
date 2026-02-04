@@ -55,36 +55,68 @@ class UIDisplay{
 	}
 
 	public static function displayBudgetTable(array $budgets) {
-    if (empty($budgets)) {
-        echo "\nNo budgets found.\n";
-        return;
-    }
+		if (empty($budgets)) {
+			echo "\nNo budgets found.\n";
+			return;
+		}
 
-    $mask = "| %-3s | %-15.15s | %-12s | %-10s | %-10s |\n";
-    $divider = "+-----+-----------------+--------------+------------+------------+\n";
+		$mask = "| %-3s | %-15.15s | %-12s | %-10s | %-10s |\n";
+		$divider = "+-----+-----------------+--------------+------------+------------+\n";
 
-    echo "\n" . $divider;
-    printf($mask, "S/N", "CATEGORY", "AMOUNT", "START", "END");
-    echo $divider;
+		echo "\n" . $divider;
+		printf($mask, "S/N", "CATEGORY", "AMOUNT", "START", "END");
+		echo $divider;
 
-    foreach ($budgets as $index => $budget) {
-        printf($mask, 
-            ($index + 1), 
-            $budget->getCategoryName(), 
-            number_format($budget->getAmount(), 2),
-            $budget->getStartDate()->format('Y-m-d'), 
-            $budget->getEndDate()->format('Y-m-d')
-        );
-    }
+		foreach ($budgets as $index => $budget) {
+			printf($mask, 
+				($index + 1), 
+				$budget->getCategoryName(), 
+				number_format($budget->getAmount(), 2),
+				$budget->getStartDate()->format('Y-m-d'), 
+				$budget->getEndDate()->format('Y-m-d')
+			);
+		}
 
-    echo $divider . "\n";
-}
+		echo $divider . "\n";
+	}
 
-	Public static function filterExpenseDisplay(){
+	public static function displayExpenseTable(array $expenses) {
+		if(!$expenses){
+			echo "\nNo expenses found.\n";
+			return;
+		}
+		echo "\n" . str_repeat("=", 95) . "\n";
+		echo str_pad("YOUR EXPENSES", 95, " ", STR_PAD_BOTH) . "\n";
+		echo str_repeat("=", 95) . "\n";
+
+		echo sprintf(
+			"%-4s | %-12s | %-15s | %-18s | %-10s | %-20s\n",
+			"S/N", "Date", "Category", "Item", "Amount", "Description"
+		);
+		echo str_repeat("-", 95) . "\n";
+
+		$total = 0;
+		foreach ($expenses as $index => $expense) {
+			$total += $expense->getAmount();
+			
+			echo sprintf(
+				"%-4d | %-12s | %-15s | %-18s | %-10s | %-20s\n",
+				$index + 1,
+				$expense->getDate()->format('Y-m-d'),
+				substr($expense->getCategoryName(), 0, 14),
+				substr($expense->getExpenseName(), 0, 17),
+				"$" . number_format($expense->getAmount(), 2),
+				substr($expense->getDescription(), 0, 19)
+			);
+		}
+
+		echo str_repeat("-", 95) . "\n";
+		echo sprintf("%-55s Total: %-15s\n", "", "$" . number_format($total, 2));
+		echo str_repeat("=", 95) . "\n\n";
+	}
+
+	Public static function filterExpenseDisplay(array $expenses, string $period){
 		echo "=== FILTER EXPENSES ===\n";
-		$period = UIDisplay::selectPeriod();
-		$expenses = Expense::filterExpenses('6950fd9de6ca7', $period);
-
 		if (empty($expenses)) {
 			echo "No expenses found for this period.\n";
 		} else {
@@ -129,10 +161,8 @@ class UIDisplay{
 		}
 	}
 
-	public static function expenseReportDisplay(){
+	public static function expenseReportDisplay(array $report, string $period){
 		echo "=== EXPENSE REPORT BY CATEGORY, DATE & AMOUNT ===\n";
-		$period = UIDisplay::selectPeriod();
-		$report = Expense::getExpenseReportByCategoryDateAmount('6950fd9de6ca7', $period);
 
 		if (empty($report)) {
 			echo "No expenses found for this period.\n";
@@ -194,8 +224,7 @@ class UIDisplay{
 		}
 	}
 
-	public static function expenseCalculationDisplay(){
-		$calculations = Expense::calculateExpensesByPeriod('6950fd9de6ca7');
+	public static function expenseCalculationDisplay(array $calculations){
 		if (!$calculations) {
 			echo "Unable to calculate expenses.\n";
 		} else {
@@ -257,173 +286,153 @@ class UIDisplay{
 		}
 	}
 
-	public static function expenseStatsDisplay(){
-		$period = UIDisplay::selectPeriod();
-		$stats = Expense::getExpenseStats('694427f5b6a6d', $period);
-
-		if (!$stats || $stats['total_expense'] == 0) {
+	public static function expenseStatsDisplay(?array $stats, string $period) {
+		if (!$stats || ($stats['total_expense'] ?? 0) == 0) {
+			echo "\n" . str_repeat("-", 70) . "\n";
 			echo "No expense statistics available for this period.\n";
-		} else {
-			$periodTitle = match($period) {
-				'day' => 'Today',
-				'month' => 'This Month',
-				'year' => 'This Year',
-				'all' => 'All Time',
-				default => ucfirst($period)
-			};
-			
-			echo "\n" . str_repeat("=", 70) . "\n";
-			echo str_pad("Expense Statistics - $periodTitle", 70, " ", STR_PAD_BOTH) . "\n";
-			echo str_repeat("=", 70) . "\n\n";
-			
-			echo sprintf("%-40s %25s\n", "Total Expenses:", '$' . number_format($stats['total_expense'], 2));
-			echo sprintf("%-40s %25s\n", "Average Expense:", '$' . number_format($stats['average_expense'], 2));
 			echo str_repeat("-", 70) . "\n";
-			
-			echo sprintf("%-40s %25s\n", "Highest Expense:", '$' . number_format($stats['highest_expense'], 2));
-			echo sprintf("%-40s %25s\n", "  Category:", $stats['highest_category'] ?? 'N/A');
-			echo str_repeat("-", 70) . "\n";
-			
-			echo sprintf("%-40s %25s\n", "Lowest Expense:", '$' . number_format($stats['lowest_expense'], 2));
-			echo sprintf("%-40s %25s\n", "  Category:", $stats['lowest_category'] ?? 'N/A');
-			
-			echo str_repeat("=", 70) . "\n\n";
-		}
-	}
-
-	public static function expenditureReportDisplay(){
-		$period = UIDisplay::selectPeriod();
-		$report = Expense::getExpenditureReport('6950fd9de6ca7', $period);
-
-		if (empty($report)) {
-			echo "No expenses found for this period.\n";
-		} else {
-			$periodLabel = match($period) {
-				'day' => 'Daily Breakdown',
-				'month' => 'Monthly Breakdown',
-				'year' => 'Yearly Breakdown',
-				default => 'Expense Report'
-			};
-			
-			$columnHeader = match($period) {
-				'day' => 'Date',
-				'month' => 'Month',
-				'year' => 'Year',
-				default => 'Period'
-			};
-			
-			echo "\n" . str_repeat("=", 70) . "\n";
-			echo str_pad("Expenditure Report - $periodLabel", 70, " ", STR_PAD_BOTH) . "\n";
-			echo str_repeat("=", 70) . "\n";
-			echo sprintf("%-30s %20s %15s\n", $columnHeader, "Amount", "% of Total");
-			echo str_repeat("-", 70) . "\n";
-			
-			$grandTotal = array_sum(array_column($report, 'total'));
-			
-			foreach ($report as $row) {
-				$label = $row['label'];
-				$total = $row['total'];
-				$percentage = ($grandTotal > 0) ? ($total / $grandTotal) * 100 : 0;
-				
-				echo sprintf(
-					"%-30s %19s %14s%%\n",
-					$label,
-					'$' . number_format($total, 2),
-					number_format($percentage, 1)
-				);
-			}
-			
-			echo str_repeat("-", 70) . "\n";
-			
-			$summaryText = match($period) {
-				'day' => count($report) . " day(s)",
-				'month' => count($report) . " month(s)",
-				'year' => count($report) . " year(s)",
-				default => count($report) . " period(s)"
-			};
-			
-			echo sprintf("%-30s %19s %15s\n", 
-				"TOTAL ($summaryText)", 
-				'$' . number_format($grandTotal, 2),
-				"100.0%"
-			);
-			
-			$average = $grandTotal / count($report);
-			$avgText = match($period) {
-				'day' => 'Average per day',
-				'month' => 'Average per month',
-				'year' => 'Average per year',
-				default => 'Average per period'
-			};
-			
-			echo sprintf("%-30s %19s\n", 
-				$avgText, 
-				'$' . number_format($average, 2)
-			);
-			
-			echo str_repeat("=", 70) . "\n\n";
+			return;
 		}
 
+		$periodTitle = match(strtolower($period)) {
+			'day', 'date' => 'Today',
+			'month'       => 'This Month',
+			'year'        => 'This Year',
+			'all'         => 'All Time',
+			default       => ucfirst($period)
+		};
+
+		echo "\n" . str_repeat("=", 70) . "\n";
+		echo str_pad("Expense Statistics - $periodTitle", 70, " ", STR_PAD_BOTH) . "\n";
+		echo str_repeat("=", 70) . "\n\n";
+
+		echo sprintf("%-40s %25s\n", "Total Expenses:",     '$' . number_format($stats['total_expense'], 2));
+		echo sprintf("%-40s %25s\n", "Average Expense:",   '$' . number_format($stats['average_expense'], 2));
+		echo str_repeat("-", 70) . "\n";
+
+		echo sprintf("%-40s %25s\n", "Highest Expense:",   '$' . number_format($stats['highest_expense'], 2));
+		echo sprintf("%-40s %25s\n", "  Category:",         $stats['highest_category'] ?? 'N/A');
+		echo str_repeat("-", 70) . "\n";
+
+		echo sprintf("%-40s %25s\n", "Lowest Expense:",    '$' . number_format($stats['lowest_expense'], 2));
+		echo sprintf("%-40s %25s\n", "  Category:",         $stats['lowest_category'] ?? 'N/A');
+
+		echo str_repeat("=", 70) . "\n\n";
 	}
 
-	public static function searchExpensesDisplay(){
-		$searchInput = UIDisplay::SearchInput();
-		$expenses = Expense::searchExpensesByCategoryAndDate(
-			'694427f5b6a6d',
-			$searchInput['categoryName'],
-			$searchInput['startDate'],
-			$searchInput['endDate']
+
+	public static function expenditureReportDisplay(array $report, string $period) {
+		$periodLabel = match($period) {
+			'day'   => 'Daily Breakdown',
+			'month' => 'Monthly Breakdown',
+			'year'  => 'Yearly Breakdown',
+			default => 'Expense Report'
+		};
+		
+		$columnHeader = match($period) {
+			'day'   => 'Date',
+			'month' => 'Month',
+			'year'  => 'Year',
+			default => 'Period'
+		};
+		
+		echo "\n" . str_repeat("=", 70) . "\n";
+		echo str_pad("Expenditure Report - $periodLabel", 70, " ", STR_PAD_BOTH) . "\n";
+		echo str_repeat("=", 70) . "\n";
+		echo sprintf("%-30s %20s %15s\n", $columnHeader, "Amount", "% of Total");
+		echo str_repeat("-", 70) . "\n";
+		
+		$grandTotal = array_sum(array_column($report, 'total'));
+		
+		foreach ($report as $row) {
+			$label = $row['label'];
+			$total = $row['total'];
+			$percentage = ($grandTotal > 0) ? ($total / $grandTotal) * 100 : 0;
+			
+			echo sprintf(
+				"%-30s %19s %14s%%\n",
+				$label,
+				'$' . number_format($total, 2),
+				number_format($percentage, 1)
+			);
+		}
+		
+		echo str_repeat("-", 70) . "\n";
+		
+		$summaryCount = count($report);
+		$summaryText = match($period) {
+			'day'   => "$summaryCount day(s)",
+			'month' => "$summaryCount month(s)",
+			'year'  => "$summaryCount year(s)",
+			default => "$summaryCount period(s)"
+		};
+		
+		echo sprintf("%-30s %19s %15s\n", 
+			"TOTAL ($summaryText)", 
+			'$' . number_format($grandTotal, 2),
+			"100.0%"
 		);
+		
+		$average = ($summaryCount > 0) ? $grandTotal / $summaryCount : 0;
+		$avgText = match($period) {
+			'day'   => 'Average per day',
+			'month' => 'Average per month',
+			'year'  => 'Average per year',
+			default => 'Average per period'
+		};
+		
+		echo sprintf("%-30s %19s\n", 
+			$avgText, 
+			'$' . number_format($average, 2)
+		);
+		
+		echo str_repeat("=", 70) . "\n\n";
+	}
+	
 
+	public static function searchExpensesDisplay(array $expenses, array $searchInput) {
 		if (empty($expenses)) {
-			echo "\nNo expenses found matching your search criteria.\n";
-		} else {
-			$searchDesc = [];
-			if ($searchInput['categoryName']) {
-				$searchDesc[] = "Category: '{$searchInput['categoryName']}'";
-			}
-			if ($searchInput['startDate']) {
-				$searchDesc[] = "From: {$searchInput['startDate']}";
-			}
-			if ($searchInput['endDate']) {
-				$searchDesc[] = "To: {$searchInput['endDate']}";
-			}
-			$searchText = empty($searchDesc) ? "All Expenses" : implode(" | ", $searchDesc);
-			
-			echo "\n" . str_repeat("=", 90) . "\n";
-			echo str_pad("Search Results - $searchText", 90, " ", STR_PAD_BOTH) . "\n";
-			echo str_repeat("=", 90) . "\n";
-			echo sprintf("%-12s %-18s %-20s %-15s %-20s\n", 
-				"Date", "Category", "Expense", "Amount", "Description");
+			echo "\n" . str_repeat("-", 90) . "\n";
+			echo "No expenses found matching your search criteria.\n";
 			echo str_repeat("-", 90) . "\n";
-			
-			$totalAmount = 0;
-			
-			foreach ($expenses as $expense) {
-				$totalAmount += $expense->getAmount();
-				
-				echo sprintf(
-					"%-12s %-18s %-20s $%-14s %-20s\n",
-					$expense->getDate()->format('Y-m-d'),
-					substr($expense->getCategoryName(), 0, 17),
-					substr($expense->getExpenseName(), 0, 19),
-					number_format($expense->getAmount(), 2),
-					substr($expense->getDescription(), 0, 19)
-				);
-			}
-			
-			echo str_repeat("=", 90) . "\n";
-			echo sprintf("%-52s $%-14s\n", 
-				"TOTAL (" . count($expenses) . " expenses)", 
-				number_format($totalAmount, 2)
-			);
-			echo sprintf("%-52s $%-14s\n", 
-				"AVERAGE", 
-				number_format($totalAmount / count($expenses), 2)
-			);
-			echo str_repeat("=", 90) . "\n\n";
+			return;
 		}
+
+		$searchDesc = [];
+		if (!empty($searchInput['categoryName'])) $searchDesc[] = "Category: '{$searchInput['categoryName']}'";
+		if (!empty($searchInput['startDate']))    $searchDesc[] = "From: {$searchInput['startDate']}";
+		if (!empty($searchInput['endDate']))      $searchDesc[] = "To: {$searchInput['endDate']}";
+		
+		$searchText = empty($searchDesc) ? "All Expenses" : implode(" | ", $searchDesc);
+		
+		echo "\n" . str_repeat("=", 95) . "\n";
+		echo str_pad("Search Results - $searchText", 95, " ", STR_PAD_BOTH) . "\n";
+		echo str_repeat("=", 95) . "\n";
+		echo sprintf("%-12s %-18s %-20s %-15s %-20s\n", 
+			"Date", "Category", "Expense", "Amount", "Description");
+		echo str_repeat("-", 95) . "\n";
+		
+		$totalAmount = 0;
+		foreach ($expenses as $expense) {
+			$totalAmount += $expense->getAmount();
+			
+			echo sprintf(
+				"%-12s %-18s %-20s $%-14s %-20s\n",
+				$expense->getDate()->format('Y-m-d'),
+				substr($expense->getCategoryName(), 0, 17),
+				substr($expense->getExpenseName(), 0, 19),
+				number_format($expense->getAmount(), 2),
+				substr($expense->getDescription(), 0, 19)
+			);
+		}
+		
+		echo str_repeat("=", 95) . "\n";
+		$count = count($expenses);
+		echo sprintf("%-52s $%-14s\n", "TOTAL ($count items)", number_format($totalAmount, 2));
+		echo sprintf("%-52s $%-14s\n", "AVERAGE", number_format($totalAmount / $count, 2));
+		echo str_repeat("=", 95) . "\n\n";
 	}
 }
+
 
 ?>

@@ -11,11 +11,11 @@ class DatabaseHelper{
 		if (self::$pdo != null) {
 			return self::$pdo;
 		}
-		$host = 'localhost';
-		$port = '5432';
-		$user = 'postgres';
-		$password = 'Traid101';
-		$database = 'expense_tracker';
+		$host     = $_ENV['DB_HOST'] ?? 'localhost';
+        $port     = $_ENV['DB_PORT'] ?? '5432';
+        $user     = $_ENV['DB_USER'] ?? 'postgres';
+        $password = $_ENV['DB_PASS'] ?? '';
+        $database = $_ENV['DB_NAME'] ?? 'expense_tracker';
 
 		$dsn = "pgsql:host=$host;port=$port;dbname=$database;";
 		try{

@@ -5,6 +5,7 @@ use App\Models\Budget;
 use App\Views\Inputs\BudgetInput;
 use App\Models\User;
 use App\Models\Category;
+use App\Services\EmailService;
 use App\Views\CLIHelper;
 use App\Core\DatabaseHelper;
 use App\Core\UtilityFunction;
@@ -222,7 +223,7 @@ class BudgetController{
 		$categories = CategoryController::viewAllCategories($userId);
 		if (empty($categories)) {
 			CLIHelper::error(" No category found.");
-			return null;
+			return false;
 		}
 
 		$choice = (int)CLIHelper::getInput("Enter the S/N to select the category");
@@ -230,7 +231,7 @@ class BudgetController{
 
 		if (!isset($categories[$Index])) {
 			CLIHelper::error("Invalid selection.");
-			return null;
+			return false;
    		}
 		$selectedCategory = $categories[$Index];
     	$categoryId = $selectedCategory->getId();
@@ -258,11 +259,20 @@ class BudgetController{
 		
 		if($totalSpent > $budgetAmount){
 			CLIHelper::error(" You have exceeded your budget for $categoryName" . (" Amout spent: $totalSpent, , Budget: $budgetAmount"));
-		}else{
-			CLIHelper::success("You are within your budget for $categoryName" . (" Amount spent: $totalSpent, Budget: $budgetAmount"));
-			return true;
+
+			$user = User::findOneByID($userId); 
+        	if ($user) {
+				EmailService::sendBudgetAlert(
+					$user->getEmail(), 
+					$user->getUserName(), 
+					$categoryName, 
+					$totalSpent, 
+					$budgetAmount
+				);
+			}
+			return false;
 		}
-		return false;
+		return true;
 	}
 
 }

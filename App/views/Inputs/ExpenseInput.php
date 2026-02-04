@@ -3,7 +3,7 @@ namespace App\Views\Inputs;
 
 use App\Models\User;
 use App\Models\Expense;
-use App\View\CLIHelper;
+use App\Views\CLIHelper;
 use Exception;
 
 class ExpenseInput{
@@ -14,14 +14,12 @@ class ExpenseInput{
             return null;
           }
 
-		$categoryName = CLIHelper::validateInput(" Category Name", 2 , true);
 		$expenseName = CLIHelper::validateInput(" Expense Name", 2, true);
 		$amount = CLIHelper::getAmount(" Amount",  true);
 		$date = CLIHelper::getDateInput(" Date");
-		$description = CLIHelper::validateInput("Description", 2, true);
+		$description = CLIHelper::validateInput(" Description", 2, true);
 
 		return [
-			'categoryName' => $categoryName,
 			'expenseName' => $expenseName,
 			'amount' => $amount,
 			'date' => $date,
@@ -31,20 +29,18 @@ class ExpenseInput{
 	}
 
     public static function updateExpenseInput(string $id){
-		$expense = self::findOneByID($id);
+		$expense = Expense::findOneByID($id);
 		if(!$expense){
 			CLIHelper:: error(" Expense not found");
 			return null;
 		}
-		$newCategoryName = CLIHelper::validateInput(" Category Name [" . $expense->getCategoryName() . "]", 2, true);
 		$newExpenseName = CLIHelper::validateInput(" Expense Name [" . $expense->getExpenseName() ."]", 2 , true);
-		$newAmount = CLIHelper::validateInput(" Amount [" . $expense->getAmount() . "]");
+		$newAmount = CLIHelper::getAmount(" Amount [" . $expense->getAmount() . "]", true);
 		$newDescription = CLIHelper::validateInput(" Description [" . $expense->getDescription() . "]", 2, true);
 
 		return [
-			'categoryName' => ($newCategoryName !== null) ? $newCategoryName : $expense->getCategoryName(),
 			'expenseName' => ($newExpenseName !== null) ? $newExpenseName : $expense->getExpenseName(),
-			'amount' => ($newAmount !== null) ? $newAmount : $expense->getAmount(),
+			'amount' => ($newAmount !== "") ? $newAmount : $expense->getAmount(),
 			'description' => ($newDescription !== null) ? : $expense->getDescription()
 		];
 	}

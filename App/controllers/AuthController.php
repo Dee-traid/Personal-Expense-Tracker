@@ -111,7 +111,7 @@ class AuthController{
 		while(true){
 			if ((time() - $startTime) > 60) {
 				CLIHelper::error(" Time expired, Generate a new one ");
-				return User::resetPassword();
+				return self::resetPassword();
 			}
 
 			$userInput = CliHelper::getInput(" Enter the 6-digit recovery code");

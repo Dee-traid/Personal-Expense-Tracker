@@ -32,7 +32,7 @@
             echo "\n";
             echo "╔════════════════════════════════════════════════════╗\n";
             echo "║                                                    ║\n";
-            echo "║           EXPENSE TRACKER APPLICATION              ║\n";
+            echo "║           DEE's EXPENSE TRACKER APPLICATION        ║\n";
             echo "║                                                    ║\n";
             echo "╚════════════════════════════════════════════════════╝\n";
             echo "\n";
@@ -42,7 +42,7 @@
             echo "\n";
             echo "╔════════════════════════════════════════════════════╗\n";
             echo "║                                                    ║\n";
-            echo "║     Thank you for using Expense Tracker!           ║\n";
+            echo "║     Thank you for using Dee's Expense Tracker!     ║\n";
             echo "║                                                    ║\n";
             echo "╚════════════════════════════════════════════════════╝\n";
             echo "\n";
@@ -76,7 +76,8 @@
                     AuthController::resetPassword();
                     break;
                 case '4':
-                    $isRunning = false;
+                    self::$isRunning = false;
+                    self::loggedOut();
                     break;
                 default:
                     self::loggedOut();
@@ -183,7 +184,8 @@
             echo "  [4] Delete Expense\n";
             echo "  [5] Search Expenses\n";
             echo "  [6] Filter Expenses by Period\n";
-            echo "  [7] Delete All Expenses\n";
+            echo "  [7] Generate Reports Summary\n";
+            echo "  [8] Delete All Expenses\n";
             echo "  [0] Back to Main Menu\n";
             echo "─────────────────────────────────────────────────────\n";
 
@@ -215,7 +217,11 @@
                     UtilityFunction::pauseForUser();
                     break;
                 case '7':
-                    ExpenseController::DeleteAllExpenses();
+                    ExpenseController::emailMonthlySummary($userId);
+                    UtilityFunction::pauseForUser();
+                    break;
+                case '8':
+                    ExpenseController::DeleteAllExpenses($userId);
                     UtilityFunction::pauseForUser();
                     break;
                 case '0':

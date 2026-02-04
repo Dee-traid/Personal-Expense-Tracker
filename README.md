@@ -114,7 +114,7 @@ During the 8-week development cycle, I explored advanced concepts such as:
 
 * **Static vs. Instance Methods**: Understanding when to use `self::` for utility/global logic vs. `$this->` for object state.
 * **Access Modifiers**: Implementing `private` and `protected` to protect data integrity (Encapsulation).
-* **API Fundamentals**: Learning the principles of building and consuming services, including security considerations like JWT.
+
 
 ---
 

@@ -13,15 +13,15 @@ class EmailHelper {
         
         try {
             $mail->isSMTP();
-            $mail->Host = EmailConfig::SMTP_HOST;
+            $mail->Host = EmailConfig::getHost();
             $mail->SMTPAuth = true;
-            $mail->Username = EmailConfig::SMTP_USERNAME;
-            $mail->Password = EmailConfig::SMTP_PASSWORD;
-            $mail->SMTPSecure = EmailConfig::SMTP_ENCRYPTION;
-            $mail->Port = EmailConfig::SMTP_PORT;
+            $mail->Username = EmailConfig::getUserName();
+            $mail->Password = EmailConfig::getPassword();
+            $mail->SMTPSecure = EmailConfig::getEncryption();
+            $mail->Port = EmailConfig::getPort();
             $mail->CharSet = EmailConfig::CHARSET;
    
-            $mail->setFrom(EmailConfig::FROM_EMAIL, EmailConfig::FROM_NAME);
+            $mail->setFrom(EmailConfig::getFromEmail(), EmailConfig::getFromName());
             
             return $mail;
             

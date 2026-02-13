@@ -33,10 +33,3 @@ set_exception_handler(function($exception) {
     echo $exception->getTraceAsString() . "\n";
 });
 
-
-// try {
-//     \App\Core\Database;
-// } catch (\Exception $e) {
-//     CLIHelper::error("Failed to connect to database. Please check your configuration.");
-//     exit(1);
-// }

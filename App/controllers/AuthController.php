@@ -82,8 +82,8 @@ class AuthController{
 				}
 			}
 
-		}	catch(PDOException $e){
-				CLIHelper::error(" Login Failed" . $e->getMessage());
+		}catch(PDOException $e){
+			CLIHelper::error(" Login Failed" . $e->getMessage());
 		}
 
 	}

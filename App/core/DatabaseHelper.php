@@ -7,6 +7,7 @@
 	
 class DatabaseHelper{
 	private static $pdo = null;
+	
 	public static function getPDOInstance(){
 		if (self::$pdo != null) {
 			return self::$pdo;
